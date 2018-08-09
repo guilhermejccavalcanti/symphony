@@ -267,6 +267,38 @@ public class AdminProcessor {
     private static final int PAGE_SIZE = 20;
 
     /**
+     * Sticks an article.
+     *
+     * @param request the specified request
+     * @param response the specified response
+     * @throws Exception exception
+     */
+    @RequestProcessing(value = "/admin/stick-article", method = HTTPRequestMethod.POST)
+    @Before(adviceClass = { StopwatchStartAdvice.class, AdminCheck.class })
+    @After(adviceClass = StopwatchEndAdvice.class)
+    public void stickArticle(final HttpServletRequest request, final HttpServletResponse response) throws Exception {
+        final String articleId = request.getParameter(Article.ARTICLE_T_ID);
+        articleMgmtService.adminStick(articleId);
+        response.sendRedirect(Latkes.getServePath() + "/admin/articles");
+    }
+
+    /**
+     * Cancels stick an article.
+     *
+     * @param request the specified request
+     * @param response the specified response
+     * @throws Exception exception
+     */
+    @RequestProcessing(value = "/admin/cancel-stick-article", method = HTTPRequestMethod.POST)
+    @Before(adviceClass = { StopwatchStartAdvice.class, AdminCheck.class })
+    @After(adviceClass = StopwatchEndAdvice.class)
+    public void stickCancelArticle(final HttpServletRequest request, final HttpServletResponse response) throws Exception {
+        final String articleId = request.getParameter(Article.ARTICLE_T_ID);
+        articleMgmtService.adminCancelStick(articleId);
+        response.sendRedirect(Latkes.getServePath() + "/admin/articles");
+    }
+
+    /**
      * Generates invitecodes.
      *
      * @param request the specified request
@@ -274,7 +306,7 @@ public class AdminProcessor {
      * @throws Exception exception
      */
     @RequestProcessing(value = "/admin/invitecodes/generate", method = HTTPRequestMethod.POST)
-    @Before(adviceClass = {StopwatchStartAdvice.class, AdminCheck.class})
+    @Before(adviceClass = { StopwatchStartAdvice.class, AdminCheck.class })
     @After(adviceClass = StopwatchEndAdvice.class)
     public void generateInvitecodes(final HttpServletRequest request, final HttpServletResponse response) throws Exception {
         final String quantityStr = request.getParameter("quantity");
@@ -283,14 +315,11 @@ public class AdminProcessor {
             quantity = Integer.valueOf(quantityStr);
         } catch (final NumberFormatException e) {
         }
-
         String memo = request.getParameter("memo");
         if (StringUtils.isBlank(memo)) {
             memo = "";
         }
-
         invitecodeMgmtService.generateInvitecodes(quantity, memo);
-
         response.sendRedirect(Latkes.getServePath() + "/admin/invitecodes");
     }
 
@@ -303,32 +332,26 @@ public class AdminProcessor {
      * @throws Exception exception
      */
     @RequestProcessing(value = "/admin/invitecodes", method = HTTPRequestMethod.GET)
-    @Before(adviceClass = {StopwatchStartAdvice.class, AdminCheck.class})
+    @Before(adviceClass = { StopwatchStartAdvice.class, AdminCheck.class })
     @After(adviceClass = StopwatchEndAdvice.class)
-    public void showInvitecodes(final HTTPRequestContext context, final HttpServletRequest request, final HttpServletResponse response)
-            throws Exception {
+    public void showInvitecodes(final HTTPRequestContext context, final HttpServletRequest request, final HttpServletResponse response) throws Exception {
         final AbstractFreeMarkerRenderer renderer = new SkinRenderer();
         context.setRenderer(renderer);
         renderer.setTemplateName("admin/invitecodes.ftl");
         final Map<String, Object> dataModel = renderer.getDataModel();
-
         String pageNumStr = request.getParameter("p");
         if (Strings.isEmptyOrNull(pageNumStr) || !Strings.isNumeric(pageNumStr)) {
             pageNumStr = "1";
         }
-
         final int pageNum = Integer.valueOf(pageNumStr);
         final int pageSize = PAGE_SIZE;
         final int windowSize = WINDOW_SIZE;
-
         final JSONObject requestJSONObject = new JSONObject();
         requestJSONObject.put(Pagination.PAGINATION_CURRENT_PAGE_NUM, pageNum);
         requestJSONObject.put(Pagination.PAGINATION_PAGE_SIZE, pageSize);
         requestJSONObject.put(Pagination.PAGINATION_WINDOW_SIZE, windowSize);
-
         final JSONObject result = invitecodeQueryService.getInvitecodes(requestJSONObject);
         dataModel.put(Invitecode.INVITECODES, CollectionUtils.jsonArrayToList(result.optJSONArray(Invitecode.INVITECODES)));
-
         final JSONObject pagination = result.optJSONObject(Pagination.PAGINATION);
         final int pageCount = pagination.optInt(Pagination.PAGINATION_PAGE_COUNT);
         final JSONArray pageNums = pagination.optJSONArray(Pagination.PAGINATION_PAGE_NUMS);
@@ -337,7 +360,6 @@ public class AdminProcessor {
         dataModel.put(Pagination.PAGINATION_CURRENT_PAGE_NUM, pageNum);
         dataModel.put(Pagination.PAGINATION_PAGE_COUNT, pageCount);
         dataModel.put(Pagination.PAGINATION_PAGE_NUMS, CollectionUtils.jsonArrayToList(pageNums));
-
         filler.fillHeaderAndFooter(request, response, dataModel);
     }
 
@@ -351,18 +373,15 @@ public class AdminProcessor {
      * @throws Exception exception
      */
     @RequestProcessing(value = "/admin/invitecode/{invitecodeId}", method = HTTPRequestMethod.GET)
-    @Before(adviceClass = {StopwatchStartAdvice.class, AdminCheck.class})
+    @Before(adviceClass = { StopwatchStartAdvice.class, AdminCheck.class })
     @After(adviceClass = StopwatchEndAdvice.class)
-    public void showInvitecode(final HTTPRequestContext context, final HttpServletRequest request, final HttpServletResponse response,
-            final String invitecodeId) throws Exception {
+    public void showInvitecode(final HTTPRequestContext context, final HttpServletRequest request, final HttpServletResponse response, final String invitecodeId) throws Exception {
         final AbstractFreeMarkerRenderer renderer = new SkinRenderer();
         context.setRenderer(renderer);
         renderer.setTemplateName("admin/invitecode.ftl");
         final Map<String, Object> dataModel = renderer.getDataModel();
-
         final JSONObject invitecode = invitecodeQueryService.getInvitecodeById(invitecodeId);
         dataModel.put(Invitecode.INVITECODE, invitecode);
-
         filler.fillHeaderAndFooter(request, response, dataModel);
     }
 
@@ -376,30 +395,23 @@ public class AdminProcessor {
      * @throws Exception exception
      */
     @RequestProcessing(value = "/admin/invitecode/{invitecodeId}", method = HTTPRequestMethod.POST)
-    @Before(adviceClass = {StopwatchStartAdvice.class, AdminCheck.class})
+    @Before(adviceClass = { StopwatchStartAdvice.class, AdminCheck.class })
     @After(adviceClass = StopwatchEndAdvice.class)
-    public void updateInvitecode(final HTTPRequestContext context, final HttpServletRequest request, final HttpServletResponse response,
-            final String invitecodeId) throws Exception {
+    public void updateInvitecode(final HTTPRequestContext context, final HttpServletRequest request, final HttpServletResponse response, final String invitecodeId) throws Exception {
         final AbstractFreeMarkerRenderer renderer = new SkinRenderer();
         context.setRenderer(renderer);
         renderer.setTemplateName("admin/invitecode.ftl");
         final Map<String, Object> dataModel = renderer.getDataModel();
-
         JSONObject invitecode = invitecodeQueryService.getInvitecodeById(invitecodeId);
-
         final Enumeration<String> parameterNames = request.getParameterNames();
         while (parameterNames.hasMoreElements()) {
             final String name = parameterNames.nextElement();
             final String value = request.getParameter(name);
-
             invitecode.put(name, value);
         }
-
         invitecodeMgmtService.updateInvitecode(invitecodeId, invitecode);
-
         invitecode = invitecodeQueryService.getInvitecodeById(invitecodeId);
         dataModel.put(Invitecode.INVITECODE, invitecode);
-
         filler.fillHeaderAndFooter(request, response, dataModel);
     }
 
@@ -412,15 +424,13 @@ public class AdminProcessor {
      * @throws Exception exception
      */
     @RequestProcessing(value = "/admin/add-article", method = HTTPRequestMethod.GET)
-    @Before(adviceClass = {StopwatchStartAdvice.class, AdminCheck.class})
+    @Before(adviceClass = { StopwatchStartAdvice.class, AdminCheck.class })
     @After(adviceClass = StopwatchEndAdvice.class)
-    public void showAddArticle(final HTTPRequestContext context, final HttpServletRequest request, final HttpServletResponse response)
-            throws Exception {
+    public void showAddArticle(final HTTPRequestContext context, final HttpServletRequest request, final HttpServletResponse response) throws Exception {
         final AbstractFreeMarkerRenderer renderer = new SkinRenderer();
         context.setRenderer(renderer);
         renderer.setTemplateName("admin/add-article.ftl");
         final Map<String, Object> dataModel = renderer.getDataModel();
-
         filler.fillHeaderAndFooter(request, response, dataModel);
     }
 
@@ -433,10 +443,9 @@ public class AdminProcessor {
      * @throws Exception exception
      */
     @RequestProcessing(value = "/admin/add-article", method = HTTPRequestMethod.POST)
-    @Before(adviceClass = {StopwatchStartAdvice.class, AdminCheck.class})
+    @Before(adviceClass = { StopwatchStartAdvice.class, AdminCheck.class })
     @After(adviceClass = StopwatchEndAdvice.class)
-    public void addArticle(final HTTPRequestContext context, final HttpServletRequest request, final HttpServletResponse response)
-            throws Exception {
+    public void addArticle(final HTTPRequestContext context, final HttpServletRequest request, final HttpServletResponse response) throws Exception {
         final String userName = request.getParameter(User.USER_NAME);
         final JSONObject author = userQueryService.getUserByName(userName);
         if (null == author) {
@@ -444,32 +453,25 @@ public class AdminProcessor {
             context.setRenderer(renderer);
             renderer.setTemplateName("admin/error.ftl");
             final Map<String, Object> dataModel = renderer.getDataModel();
-
             dataModel.put(Keys.MSG, langPropsService.get("notFoundUserLabel"));
             filler.fillHeaderAndFooter(request, response, dataModel);
-
             return;
         }
-
         final String timeStr = request.getParameter(Common.TIME);
         final String articleTitle = request.getParameter(Article.ARTICLE_TITLE);
         final String articleTags = request.getParameter(Article.ARTICLE_TAGS);
         final String articleContent = request.getParameter(Article.ARTICLE_CONTENT);
         String rewardContent = request.getParameter(Article.ARTICLE_REWARD_CONTENT);
         final String rewardPoint = request.getParameter(Article.ARTICLE_REWARD_POINT);
-
         long time = System.currentTimeMillis();
-
         try {
-            final Date date = DateUtils.parseDate(timeStr, new String[]{"yyyy-MM-dd'T'HH:mm"});
-
+            final Date date = DateUtils.parseDate(timeStr, new String[] { "yyyy-MM-dd'T'HH:mm" });
             time = date.getTime();
             final int random = RandomUtils.nextInt(9999);
             time += random;
         } catch (final Exception e) {
             LOGGER.log(Level.ERROR, "Parse time failed, using current time instead");
         }
-
         final JSONObject article = new JSONObject();
         article.put(Article.ARTICLE_TITLE, articleTitle);
         article.put(Article.ARTICLE_TAGS, articleTags);
@@ -478,7 +480,6 @@ public class AdminProcessor {
         article.put(Article.ARTICLE_REWARD_POINT, Integer.valueOf(rewardPoint));
         article.put(User.USER_NAME, userName);
         article.put(Common.TIME, time);
-
         try {
             articleMgmtService.addArticleByAdmin(article);
         } catch (final ServiceException e) {
@@ -486,13 +487,10 @@ public class AdminProcessor {
             context.setRenderer(renderer);
             renderer.setTemplateName("admin/error.ftl");
             final Map<String, Object> dataModel = renderer.getDataModel();
-
             dataModel.put(Keys.MSG, e.getMessage());
             filler.fillHeaderAndFooter(request, response, dataModel);
-
             return;
         }
-
         response.sendRedirect(Latkes.getServePath() + "/admin/articles");
     }
 
@@ -505,10 +503,9 @@ public class AdminProcessor {
      * @throws Exception exception
      */
     @RequestProcessing(value = "/admin/add-reserved-word", method = HTTPRequestMethod.POST)
-    @Before(adviceClass = {StopwatchStartAdvice.class, AdminCheck.class})
+    @Before(adviceClass = { StopwatchStartAdvice.class, AdminCheck.class })
     @After(adviceClass = StopwatchEndAdvice.class)
-    public void addReservedWord(final HTTPRequestContext context, final HttpServletRequest request, final HttpServletResponse response)
-            throws Exception {
+    public void addReservedWord(final HTTPRequestContext context, final HttpServletRequest request, final HttpServletResponse response) throws Exception {
         String word = request.getParameter(Common.WORD);
         word = StringUtils.trim(word);
         if (StringUtils.isBlank(word)) {
@@ -516,37 +513,28 @@ public class AdminProcessor {
             context.setRenderer(renderer);
             renderer.setTemplateName("admin/error.ftl");
             final Map<String, Object> dataModel = renderer.getDataModel();
-
             dataModel.put(Keys.MSG, langPropsService.get("invalidReservedWordLabel"));
             filler.fillHeaderAndFooter(request, response, dataModel);
-
             return;
         }
-
         if (optionQueryService.existReservedWord(word)) {
             response.sendRedirect(Latkes.getServePath() + "/admin/reserved-words");
-
             return;
         }
-
         try {
             final JSONObject reservedWord = new JSONObject();
             reservedWord.put(Option.OPTION_CATEGORY, Option.CATEGORY_C_RESERVED_WORDS);
             reservedWord.put(Option.OPTION_VALUE, word);
-
             optionMgmtService.addOption(reservedWord);
         } catch (final Exception e) {
             final AbstractFreeMarkerRenderer renderer = new SkinRenderer();
             context.setRenderer(renderer);
             renderer.setTemplateName("admin/error.ftl");
             final Map<String, Object> dataModel = renderer.getDataModel();
-
             dataModel.put(Keys.MSG, e.getMessage());
             filler.fillHeaderAndFooter(request, response, dataModel);
-
             return;
         }
-
         response.sendRedirect(Latkes.getServePath() + "/admin/reserved-words");
     }
 
@@ -559,15 +547,13 @@ public class AdminProcessor {
      * @throws Exception exception
      */
     @RequestProcessing(value = "/admin/add-reserved-word", method = HTTPRequestMethod.GET)
-    @Before(adviceClass = {StopwatchStartAdvice.class, AdminCheck.class})
+    @Before(adviceClass = { StopwatchStartAdvice.class, AdminCheck.class })
     @After(adviceClass = StopwatchEndAdvice.class)
-    public void showAddReservedWord(final HTTPRequestContext context, final HttpServletRequest request, final HttpServletResponse response)
-            throws Exception {
+    public void showAddReservedWord(final HTTPRequestContext context, final HttpServletRequest request, final HttpServletResponse response) throws Exception {
         final AbstractFreeMarkerRenderer renderer = new SkinRenderer();
         context.setRenderer(renderer);
         renderer.setTemplateName("admin/add-reserved-word.ftl");
         final Map<String, Object> dataModel = renderer.getDataModel();
-
         filler.fillHeaderAndFooter(request, response, dataModel);
     }
 
@@ -581,28 +567,22 @@ public class AdminProcessor {
      * @throws Exception exception
      */
     @RequestProcessing(value = "/admin/reserved-word/{id}", method = HTTPRequestMethod.POST)
-    @Before(adviceClass = {StopwatchStartAdvice.class, AdminCheck.class})
+    @Before(adviceClass = { StopwatchStartAdvice.class, AdminCheck.class })
     @After(adviceClass = StopwatchEndAdvice.class)
-    public void updateReservedWord(final HTTPRequestContext context, final HttpServletRequest request, final HttpServletResponse response,
-            final String id) throws Exception {
+    public void updateReservedWord(final HTTPRequestContext context, final HttpServletRequest request, final HttpServletResponse response, final String id) throws Exception {
         final AbstractFreeMarkerRenderer renderer = new SkinRenderer();
         context.setRenderer(renderer);
         renderer.setTemplateName("admin/reserved-word.ftl");
         final Map<String, Object> dataModel = renderer.getDataModel();
-
         final JSONObject word = optionQueryService.getOption(id);
         dataModel.put(Common.WORD, word);
-
         final Enumeration<String> parameterNames = request.getParameterNames();
         while (parameterNames.hasMoreElements()) {
             final String name = parameterNames.nextElement();
             final String value = request.getParameter(name);
-
             word.put(name, value);
         }
-
         optionMgmtService.updateOption(id, word);
-
         filler.fillHeaderAndFooter(request, response, dataModel);
     }
 
@@ -615,17 +595,14 @@ public class AdminProcessor {
      * @throws Exception exception
      */
     @RequestProcessing(value = "/admin/reserved-words", method = HTTPRequestMethod.GET)
-    @Before(adviceClass = {StopwatchStartAdvice.class, AdminCheck.class})
+    @Before(adviceClass = { StopwatchStartAdvice.class, AdminCheck.class })
     @After(adviceClass = StopwatchEndAdvice.class)
-    public void showReservedWords(final HTTPRequestContext context, final HttpServletRequest request, final HttpServletResponse response)
-            throws Exception {
+    public void showReservedWords(final HTTPRequestContext context, final HttpServletRequest request, final HttpServletResponse response) throws Exception {
         final AbstractFreeMarkerRenderer renderer = new SkinRenderer();
         context.setRenderer(renderer);
         renderer.setTemplateName("admin/reserved-words.ftl");
         final Map<String, Object> dataModel = renderer.getDataModel();
-
         dataModel.put(Common.WORDS, optionQueryService.getReservedWords());
-
         filler.fillHeaderAndFooter(request, response, dataModel);
     }
 
@@ -639,18 +616,15 @@ public class AdminProcessor {
      * @throws Exception exception
      */
     @RequestProcessing(value = "/admin/reserved-word/{id}", method = HTTPRequestMethod.GET)
-    @Before(adviceClass = {StopwatchStartAdvice.class, AdminCheck.class})
+    @Before(adviceClass = { StopwatchStartAdvice.class, AdminCheck.class })
     @After(adviceClass = StopwatchEndAdvice.class)
-    public void showReservedWord(final HTTPRequestContext context, final HttpServletRequest request, final HttpServletResponse response,
-            final String id) throws Exception {
+    public void showReservedWord(final HTTPRequestContext context, final HttpServletRequest request, final HttpServletResponse response, final String id) throws Exception {
         final AbstractFreeMarkerRenderer renderer = new SkinRenderer();
         context.setRenderer(renderer);
         renderer.setTemplateName("admin/reserved-word.ftl");
         final Map<String, Object> dataModel = renderer.getDataModel();
-
         final JSONObject word = optionQueryService.getOption(id);
         dataModel.put(Common.WORD, word);
-
         filler.fillHeaderAndFooter(request, response, dataModel);
     }
 
@@ -663,13 +637,11 @@ public class AdminProcessor {
      * @throws Exception exception
      */
     @RequestProcessing(value = "/admin/remove-reserved-word", method = HTTPRequestMethod.POST)
-    @Before(adviceClass = {StopwatchStartAdvice.class, AdminCheck.class})
+    @Before(adviceClass = { StopwatchStartAdvice.class, AdminCheck.class })
     @After(adviceClass = StopwatchEndAdvice.class)
-    public void removeReservedWord(final HTTPRequestContext context, final HttpServletRequest request, final HttpServletResponse response)
-            throws Exception {
+    public void removeReservedWord(final HTTPRequestContext context, final HttpServletRequest request, final HttpServletResponse response) throws Exception {
         final String id = request.getParameter("id");
         optionMgmtService.removeOption(id);
-
         response.sendRedirect(Latkes.getServePath() + "/admin/reserved-words");
     }
 
@@ -682,13 +654,11 @@ public class AdminProcessor {
      * @throws Exception exception
      */
     @RequestProcessing(value = "/admin/remove-comment", method = HTTPRequestMethod.POST)
-    @Before(adviceClass = {StopwatchStartAdvice.class, AdminCheck.class})
+    @Before(adviceClass = { StopwatchStartAdvice.class, AdminCheck.class })
     @After(adviceClass = StopwatchEndAdvice.class)
-    public void removeComment(final HTTPRequestContext context, final HttpServletRequest request, final HttpServletResponse response)
-            throws Exception {
+    public void removeComment(final HTTPRequestContext context, final HttpServletRequest request, final HttpServletResponse response) throws Exception {
         final String commentId = request.getParameter(Comment.COMMENT_T_ID);
         commentMgmtService.removeComment(commentId);
-
         response.sendRedirect(Latkes.getServePath() + "/admin/comments");
     }
 
@@ -701,13 +671,11 @@ public class AdminProcessor {
      * @throws Exception exception
      */
     @RequestProcessing(value = "/admin/remove-article", method = HTTPRequestMethod.POST)
-    @Before(adviceClass = {StopwatchStartAdvice.class, AdminCheck.class})
+    @Before(adviceClass = { StopwatchStartAdvice.class, AdminCheck.class })
     @After(adviceClass = StopwatchEndAdvice.class)
-    public void removeArticle(final HTTPRequestContext context, final HttpServletRequest request, final HttpServletResponse response)
-            throws Exception {
+    public void removeArticle(final HTTPRequestContext context, final HttpServletRequest request, final HttpServletResponse response) throws Exception {
         final String articleId = request.getParameter(Article.ARTICLE_T_ID);
         articleMgmtService.removeArticle(articleId);
-
         response.sendRedirect(Latkes.getServePath() + "/admin/articles");
     }
 
@@ -720,17 +688,14 @@ public class AdminProcessor {
      * @throws Exception exception
      */
     @RequestProcessing(value = "/admin", method = HTTPRequestMethod.GET)
-    @Before(adviceClass = {StopwatchStartAdvice.class, AdminCheck.class})
+    @Before(adviceClass = { StopwatchStartAdvice.class, AdminCheck.class })
     @After(adviceClass = StopwatchEndAdvice.class)
-    public void showIndex(final HTTPRequestContext context, final HttpServletRequest request, final HttpServletResponse response)
-            throws Exception {
+    public void showIndex(final HTTPRequestContext context, final HttpServletRequest request, final HttpServletResponse response) throws Exception {
         final AbstractFreeMarkerRenderer renderer = new SkinRenderer();
         context.setRenderer(renderer);
         renderer.setTemplateName("admin/index.ftl");
         final Map<String, Object> dataModel = renderer.getDataModel();
-
         filler.fillHeaderAndFooter(request, response, dataModel);
-
         if ((Boolean) dataModel.get(Common.IS_MOBILE)) {
             final JSONObject statistic = optionQueryService.getStatistic();
             dataModel.put(Option.CATEGORY_C_STATISTIC, statistic);
@@ -746,38 +711,30 @@ public class AdminProcessor {
      * @throws Exception exception
      */
     @RequestProcessing(value = "/admin/users", method = HTTPRequestMethod.GET)
-    @Before(adviceClass = {StopwatchStartAdvice.class, AdminCheck.class})
+    @Before(adviceClass = { StopwatchStartAdvice.class, AdminCheck.class })
     @After(adviceClass = StopwatchEndAdvice.class)
-    public void showUsers(final HTTPRequestContext context, final HttpServletRequest request, final HttpServletResponse response)
-            throws Exception {
+    public void showUsers(final HTTPRequestContext context, final HttpServletRequest request, final HttpServletResponse response) throws Exception {
         final AbstractFreeMarkerRenderer renderer = new SkinRenderer();
         context.setRenderer(renderer);
         renderer.setTemplateName("admin/users.ftl");
         final Map<String, Object> dataModel = renderer.getDataModel();
-
         String pageNumStr = request.getParameter("p");
         if (Strings.isEmptyOrNull(pageNumStr) || !Strings.isNumeric(pageNumStr)) {
             pageNumStr = "1";
         }
-
         final int pageNum = Integer.valueOf(pageNumStr);
         final int pageSize = PAGE_SIZE;
         final int windowSize = WINDOW_SIZE;
-
         final JSONObject requestJSONObject = new JSONObject();
         requestJSONObject.put(Pagination.PAGINATION_CURRENT_PAGE_NUM, pageNum);
         requestJSONObject.put(Pagination.PAGINATION_PAGE_SIZE, pageSize);
         requestJSONObject.put(Pagination.PAGINATION_WINDOW_SIZE, windowSize);
-
         final String nameOrEmail = request.getParameter(Common.USER_NAME_OR_EMAIL);
         if (!Strings.isEmptyOrNull(nameOrEmail)) {
             requestJSONObject.put(Common.USER_NAME_OR_EMAIL, nameOrEmail);
         }
-
         final JSONObject result = userQueryService.getUsers(requestJSONObject);
-
         dataModel.put(User.USERS, CollectionUtils.jsonArrayToList(result.optJSONArray(User.USERS)));
-
         final JSONObject pagination = result.optJSONObject(Pagination.PAGINATION);
         final int pageCount = pagination.optInt(Pagination.PAGINATION_PAGE_COUNT);
         final JSONArray pageNums = pagination.optJSONArray(Pagination.PAGINATION_PAGE_NUMS);
@@ -786,7 +743,6 @@ public class AdminProcessor {
         dataModel.put(Pagination.PAGINATION_CURRENT_PAGE_NUM, pageNum);
         dataModel.put(Pagination.PAGINATION_PAGE_COUNT, pageCount);
         dataModel.put(Pagination.PAGINATION_PAGE_NUMS, CollectionUtils.jsonArrayToList(pageNums));
-
         filler.fillHeaderAndFooter(request, response, dataModel);
     }
 
@@ -800,18 +756,15 @@ public class AdminProcessor {
      * @throws Exception exception
      */
     @RequestProcessing(value = "/admin/user/{userId}", method = HTTPRequestMethod.GET)
-    @Before(adviceClass = {StopwatchStartAdvice.class, AdminCheck.class})
+    @Before(adviceClass = { StopwatchStartAdvice.class, AdminCheck.class })
     @After(adviceClass = StopwatchEndAdvice.class)
-    public void showUser(final HTTPRequestContext context, final HttpServletRequest request, final HttpServletResponse response,
-            final String userId) throws Exception {
+    public void showUser(final HTTPRequestContext context, final HttpServletRequest request, final HttpServletResponse response, final String userId) throws Exception {
         final AbstractFreeMarkerRenderer renderer = new SkinRenderer();
         context.setRenderer(renderer);
         renderer.setTemplateName("admin/user.ftl");
         final Map<String, Object> dataModel = renderer.getDataModel();
-
         final JSONObject user = userQueryService.getUser(userId);
         dataModel.put(User.USER, user);
-
         filler.fillHeaderAndFooter(request, response, dataModel);
     }
 
@@ -824,15 +777,13 @@ public class AdminProcessor {
      * @throws Exception exception
      */
     @RequestProcessing(value = "/admin/add-user", method = HTTPRequestMethod.GET)
-    @Before(adviceClass = {StopwatchStartAdvice.class, AdminCheck.class})
+    @Before(adviceClass = { StopwatchStartAdvice.class, AdminCheck.class })
     @After(adviceClass = StopwatchEndAdvice.class)
-    public void showAddUser(final HTTPRequestContext context, final HttpServletRequest request, final HttpServletResponse response)
-            throws Exception {
+    public void showAddUser(final HTTPRequestContext context, final HttpServletRequest request, final HttpServletResponse response) throws Exception {
         final AbstractFreeMarkerRenderer renderer = new SkinRenderer();
         context.setRenderer(renderer);
         renderer.setTemplateName("admin/add-user.ftl");
         final Map<String, Object> dataModel = renderer.getDataModel();
-
         filler.fillHeaderAndFooter(request, response, dataModel);
     }
 
@@ -845,25 +796,21 @@ public class AdminProcessor {
      * @throws Exception exception
      */
     @RequestProcessing(value = "/admin/add-user", method = HTTPRequestMethod.POST)
-    @Before(adviceClass = {StopwatchStartAdvice.class, AdminCheck.class})
+    @Before(adviceClass = { StopwatchStartAdvice.class, AdminCheck.class })
     @After(adviceClass = StopwatchEndAdvice.class)
-    public void addUser(final HTTPRequestContext context, final HttpServletRequest request, final HttpServletResponse response)
-            throws Exception {
+    public void addUser(final HTTPRequestContext context, final HttpServletRequest request, final HttpServletResponse response) throws Exception {
         final String userName = request.getParameter(User.USER_NAME);
         final String email = request.getParameter(User.USER_EMAIL);
         final String password = request.getParameter(User.USER_PASSWORD);
         final String appRole = request.getParameter(UserExt.USER_APP_ROLE);
-
         final boolean nameInvalid = UserRegisterValidation.invalidUserName(userName);
         final boolean emailInvalid = !Strings.isEmail(email);
         final boolean passwordInvalid = UserRegister2Validation.invalidUserPassword(password);
-
         if (nameInvalid || emailInvalid || passwordInvalid) {
             final AbstractFreeMarkerRenderer renderer = new SkinRenderer();
             context.setRenderer(renderer);
             renderer.setTemplateName("admin/error.ftl");
             final Map<String, Object> dataModel = renderer.getDataModel();
-
             if (nameInvalid) {
                 dataModel.put(Keys.MSG, langPropsService.get("invalidUserNameLabel"));
             } else if (emailInvalid) {
@@ -871,12 +818,9 @@ public class AdminProcessor {
             } else if (passwordInvalid) {
                 dataModel.put(Keys.MSG, langPropsService.get("invalidPasswordLabel"));
             }
-
             filler.fillHeaderAndFooter(request, response, dataModel);
-
             return;
         }
-
         String userId;
         try {
             final JSONObject user = new JSONObject();
@@ -885,20 +829,16 @@ public class AdminProcessor {
             user.put(User.USER_PASSWORD, MD5.hash(password));
             user.put(UserExt.USER_APP_ROLE, appRole);
             user.put(UserExt.USER_STATUS, UserExt.USER_STATUS_C_VALID);
-
             userId = userMgmtService.addUser(user);
         } catch (final Exception e) {
             final AbstractFreeMarkerRenderer renderer = new SkinRenderer();
             context.setRenderer(renderer);
             renderer.setTemplateName("admin/error.ftl");
             final Map<String, Object> dataModel = renderer.getDataModel();
-
             dataModel.put(Keys.MSG, e.getMessage());
             filler.fillHeaderAndFooter(request, response, dataModel);
-
             return;
         }
-
         response.sendRedirect(Latkes.getServePath() + "/admin/user/" + userId);
     }
 
@@ -912,25 +852,20 @@ public class AdminProcessor {
      * @throws Exception exception
      */
     @RequestProcessing(value = "/admin/user/{userId}", method = HTTPRequestMethod.POST)
-    @Before(adviceClass = {StopwatchStartAdvice.class, AdminCheck.class})
+    @Before(adviceClass = { StopwatchStartAdvice.class, AdminCheck.class })
     @After(adviceClass = StopwatchEndAdvice.class)
-    public void updateUser(final HTTPRequestContext context, final HttpServletRequest request, final HttpServletResponse response,
-            final String userId) throws Exception {
+    public void updateUser(final HTTPRequestContext context, final HttpServletRequest request, final HttpServletResponse response, final String userId) throws Exception {
         final AbstractFreeMarkerRenderer renderer = new SkinRenderer();
         context.setRenderer(renderer);
         renderer.setTemplateName("admin/user.ftl");
         final Map<String, Object> dataModel = renderer.getDataModel();
-
         final JSONObject user = userQueryService.getUser(userId);
         dataModel.put(User.USER, user);
-
         final Enumeration<String> parameterNames = request.getParameterNames();
         while (parameterNames.hasMoreElements()) {
             final String name = parameterNames.nextElement();
             final String value = request.getParameter(name);
-
-            if (name.equals(UserExt.USER_POINT) || name.equals(UserExt.USER_APP_ROLE) || name.equals(UserExt.USER_STATUS)
-                    || name.equals(UserExt.USER_COMMENT_VIEW_MODE)) {
+            if (name.equals(UserExt.USER_POINT) || name.equals(UserExt.USER_APP_ROLE) || name.equals(UserExt.USER_STATUS) || name.equals(UserExt.USER_COMMENT_VIEW_MODE)) {
                 user.put(name, Integer.valueOf(value));
             } else if (name.equals(User.USER_PASSWORD)) {
                 final String oldPwd = (String) user.getString(name);
@@ -943,9 +878,7 @@ public class AdminProcessor {
                 user.put(name, value);
             }
         }
-
         userMgmtService.updateUser(userId, user);
-
         filler.fillHeaderAndFooter(request, response, dataModel);
     }
 
@@ -959,22 +892,17 @@ public class AdminProcessor {
      * @throws Exception exception
      */
     @RequestProcessing(value = "/admin/user/{userId}/email", method = HTTPRequestMethod.POST)
-    @Before(adviceClass = {StopwatchStartAdvice.class, AdminCheck.class})
+    @Before(adviceClass = { StopwatchStartAdvice.class, AdminCheck.class })
     @After(adviceClass = StopwatchEndAdvice.class)
-    public void updateUserEmail(final HTTPRequestContext context, final HttpServletRequest request, final HttpServletResponse response,
-            final String userId) throws Exception {
+    public void updateUserEmail(final HTTPRequestContext context, final HttpServletRequest request, final HttpServletResponse response, final String userId) throws Exception {
         final JSONObject user = userQueryService.getUser(userId);
         final String oldEmail = user.optString(User.USER_EMAIL);
         final String newEmail = request.getParameter(User.USER_EMAIL);
-
         if (oldEmail.equals(newEmail)) {
             response.sendRedirect(Latkes.getServePath() + "/admin/user/" + userId);
-
             return;
         }
-
         user.put(User.USER_EMAIL, newEmail);
-
         try {
             userMgmtService.updateUserEmail(userId, user);
         } catch (final ServiceException e) {
@@ -982,13 +910,10 @@ public class AdminProcessor {
             context.setRenderer(renderer);
             renderer.setTemplateName("admin/error.ftl");
             final Map<String, Object> dataModel = renderer.getDataModel();
-
             dataModel.put(Keys.MSG, e.getMessage());
             filler.fillHeaderAndFooter(request, response, dataModel);
-
             return;
         }
-
         response.sendRedirect(Latkes.getServePath() + "/admin/user/" + userId);
     }
 
@@ -1002,22 +927,17 @@ public class AdminProcessor {
      * @throws Exception exception
      */
     @RequestProcessing(value = "/admin/user/{userId}/username", method = HTTPRequestMethod.POST)
-    @Before(adviceClass = {StopwatchStartAdvice.class, AdminCheck.class})
+    @Before(adviceClass = { StopwatchStartAdvice.class, AdminCheck.class })
     @After(adviceClass = StopwatchEndAdvice.class)
-    public void updateUserName(final HTTPRequestContext context, final HttpServletRequest request, final HttpServletResponse response,
-            final String userId) throws Exception {
+    public void updateUserName(final HTTPRequestContext context, final HttpServletRequest request, final HttpServletResponse response, final String userId) throws Exception {
         final JSONObject user = userQueryService.getUser(userId);
         final String oldUserName = user.optString(User.USER_NAME);
         final String newUserName = request.getParameter(User.USER_NAME);
-
         if (oldUserName.equals(newUserName)) {
             response.sendRedirect(Latkes.getServePath() + "/admin/user/" + userId);
-
             return;
         }
-
         user.put(User.USER_NAME, newUserName);
-
         try {
             userMgmtService.updateUserName(userId, user);
         } catch (final ServiceException e) {
@@ -1025,13 +945,10 @@ public class AdminProcessor {
             context.setRenderer(renderer);
             renderer.setTemplateName("admin/error.ftl");
             final Map<String, Object> dataModel = renderer.getDataModel();
-
             dataModel.put(Keys.MSG, e.getMessage());
             filler.fillHeaderAndFooter(request, response, dataModel);
-
             return;
         }
-
         response.sendRedirect(Latkes.getServePath() + "/admin/user/" + userId);
     }
 
@@ -1045,44 +962,32 @@ public class AdminProcessor {
      * @throws Exception exception
      */
     @RequestProcessing(value = "/admin/user/{userId}/charge-point", method = HTTPRequestMethod.POST)
-    @Before(adviceClass = {StopwatchStartAdvice.class, AdminCheck.class})
+    @Before(adviceClass = { StopwatchStartAdvice.class, AdminCheck.class })
     @After(adviceClass = StopwatchEndAdvice.class)
-    public void chargePoint(final HTTPRequestContext context, final HttpServletRequest request, final HttpServletResponse response,
-            final String userId) throws Exception {
+    public void chargePoint(final HTTPRequestContext context, final HttpServletRequest request, final HttpServletResponse response, final String userId) throws Exception {
         final String pointStr = request.getParameter(Common.POINT);
         final String memo = request.getParameter("memo");
-
         if (StringUtils.isBlank(pointStr) || StringUtils.isBlank(memo) || !Strings.isNumeric(memo.split("-")[0])) {
             LOGGER.warn("Charge point memo format error");
-
             response.sendRedirect(Latkes.getServePath() + "/admin/user/" + userId);
-
             return;
         }
-
         try {
             final int point = Integer.valueOf(pointStr);
-
-            final String transferId = pointtransferMgmtService.transfer(Pointtransfer.ID_C_SYS, userId,
-                    Pointtransfer.TRANSFER_TYPE_C_CHARGE, point, memo);
-
+            final String transferId = pointtransferMgmtService.transfer(Pointtransfer.ID_C_SYS, userId, Pointtransfer.TRANSFER_TYPE_C_CHARGE, point, memo);
             final JSONObject notification = new JSONObject();
             notification.put(Notification.NOTIFICATION_USER_ID, userId);
             notification.put(Notification.NOTIFICATION_DATA_ID, transferId);
-
             notificationMgmtService.addPointChargeNotification(notification);
         } catch (final Exception e) {
             final AbstractFreeMarkerRenderer renderer = new SkinRenderer();
             context.setRenderer(renderer);
             renderer.setTemplateName("admin/error.ftl");
             final Map<String, Object> dataModel = renderer.getDataModel();
-
             dataModel.put(Keys.MSG, e.getMessage());
             filler.fillHeaderAndFooter(request, response, dataModel);
-
             return;
         }
-
         response.sendRedirect(Latkes.getServePath() + "/admin/user/" + userId);
     }
 
@@ -1096,52 +1001,38 @@ public class AdminProcessor {
      * @throws Exception exception
      */
     @RequestProcessing(value = "/admin/user/{userId}/abuse-point", method = HTTPRequestMethod.POST)
-    @Before(adviceClass = {StopwatchStartAdvice.class, AdminCheck.class})
+    @Before(adviceClass = { StopwatchStartAdvice.class, AdminCheck.class })
     @After(adviceClass = StopwatchEndAdvice.class)
-    public void abusePoint(final HTTPRequestContext context, final HttpServletRequest request, final HttpServletResponse response,
-            final String userId) throws Exception {
+    public void abusePoint(final HTTPRequestContext context, final HttpServletRequest request, final HttpServletResponse response, final String userId) throws Exception {
         final String pointStr = request.getParameter(Common.POINT);
-
         try {
             final int point = Integer.valueOf(pointStr);
-
             final JSONObject user = userQueryService.getUser(userId);
             final int currentPoint = user.optInt(UserExt.USER_POINT);
-
             if (currentPoint - point < 0) {
                 final AbstractFreeMarkerRenderer renderer = new SkinRenderer();
                 context.setRenderer(renderer);
                 renderer.setTemplateName("admin/error.ftl");
                 final Map<String, Object> dataModel = renderer.getDataModel();
-
                 dataModel.put(Keys.MSG, langPropsService.get("insufficientBalanceLabel"));
                 filler.fillHeaderAndFooter(request, response, dataModel);
-
                 return;
             }
-
             final String memo = request.getParameter(Common.MEMO);
-
-            final String transferId = pointtransferMgmtService.transfer(userId, Pointtransfer.ID_C_SYS,
-                    Pointtransfer.TRANSFER_TYPE_C_ABUSE_DEDUCT, point, memo);
-
+            final String transferId = pointtransferMgmtService.transfer(userId, Pointtransfer.ID_C_SYS, Pointtransfer.TRANSFER_TYPE_C_ABUSE_DEDUCT, point, memo);
             final JSONObject notification = new JSONObject();
             notification.put(Notification.NOTIFICATION_USER_ID, userId);
             notification.put(Notification.NOTIFICATION_DATA_ID, transferId);
-
             notificationMgmtService.addAbusePointDeductNotification(notification);
         } catch (final Exception e) {
             final AbstractFreeMarkerRenderer renderer = new SkinRenderer();
             context.setRenderer(renderer);
             renderer.setTemplateName("admin/error.ftl");
             final Map<String, Object> dataModel = renderer.getDataModel();
-
             dataModel.put(Keys.MSG, e.getMessage());
             filler.fillHeaderAndFooter(request, response, dataModel);
-
             return;
         }
-
         response.sendRedirect(Latkes.getServePath() + "/admin/user/" + userId);
     }
 
@@ -1155,38 +1046,28 @@ public class AdminProcessor {
      * @throws Exception exception
      */
     @RequestProcessing(value = "/admin/user/{userId}/init-point", method = HTTPRequestMethod.POST)
-    @Before(adviceClass = {StopwatchStartAdvice.class, AdminCheck.class})
+    @Before(adviceClass = { StopwatchStartAdvice.class, AdminCheck.class })
     @After(adviceClass = StopwatchEndAdvice.class)
-    public void initPoint(final HTTPRequestContext context, final HttpServletRequest request, final HttpServletResponse response,
-            final String userId) throws Exception {
+    public void initPoint(final HTTPRequestContext context, final HttpServletRequest request, final HttpServletResponse response, final String userId) throws Exception {
         try {
             final JSONObject user = userQueryService.getUser(userId);
-            if (null == user
-                    || UserExt.USER_STATUS_C_VALID != user.optInt(UserExt.USER_STATUS)
-                    || UserExt.NULL_USER_NAME.equals(user.optString(User.USER_NAME))) {
+            if (null == user || UserExt.USER_STATUS_C_VALID != user.optInt(UserExt.USER_STATUS) || UserExt.NULL_USER_NAME.equals(user.optString(User.USER_NAME))) {
                 response.sendRedirect(Latkes.getServePath() + "/admin/user/" + userId);
-
                 return;
             }
-
-            final List<JSONObject> records
-                    = pointtransferQueryService.getLatestPointtransfers(userId, Pointtransfer.TRANSFER_TYPE_C_INIT, 1);
+            final List<JSONObject> records = pointtransferQueryService.getLatestPointtransfers(userId, Pointtransfer.TRANSFER_TYPE_C_INIT, 1);
             if (records.isEmpty()) {
-                pointtransferMgmtService.transfer(Pointtransfer.ID_C_SYS, userId, Pointtransfer.TRANSFER_TYPE_C_INIT,
-                        Pointtransfer.TRANSFER_SUM_C_INIT, userId, Long.valueOf(userId));
+                pointtransferMgmtService.transfer(Pointtransfer.ID_C_SYS, userId, Pointtransfer.TRANSFER_TYPE_C_INIT, Pointtransfer.TRANSFER_SUM_C_INIT, userId, Long.valueOf(userId));
             }
         } catch (final Exception e) {
             final AbstractFreeMarkerRenderer renderer = new SkinRenderer();
             context.setRenderer(renderer);
             renderer.setTemplateName("admin/error.ftl");
             final Map<String, Object> dataModel = renderer.getDataModel();
-
             dataModel.put(Keys.MSG, e.getMessage());
             filler.fillHeaderAndFooter(request, response, dataModel);
-
             return;
         }
-
         response.sendRedirect(Latkes.getServePath() + "/admin/user/" + userId);
     }
 
@@ -1200,52 +1081,38 @@ public class AdminProcessor {
      * @throws Exception exception
      */
     @RequestProcessing(value = "/admin/user/{userId}/exchange-point", method = HTTPRequestMethod.POST)
-    @Before(adviceClass = {StopwatchStartAdvice.class, AdminCheck.class})
+    @Before(adviceClass = { StopwatchStartAdvice.class, AdminCheck.class })
     @After(adviceClass = StopwatchEndAdvice.class)
-    public void exchangePoint(final HTTPRequestContext context, final HttpServletRequest request, final HttpServletResponse response,
-            final String userId) throws Exception {
+    public void exchangePoint(final HTTPRequestContext context, final HttpServletRequest request, final HttpServletResponse response, final String userId) throws Exception {
         final String pointStr = request.getParameter(Common.POINT);
-
         try {
             final int point = Integer.valueOf(pointStr);
-
             final JSONObject user = userQueryService.getUser(userId);
             final int currentPoint = user.optInt(UserExt.USER_POINT);
-
             if (currentPoint - point < Symphonys.getInt("pointExchangeMin")) {
                 final AbstractFreeMarkerRenderer renderer = new SkinRenderer();
                 context.setRenderer(renderer);
                 renderer.setTemplateName("admin/error.ftl");
                 final Map<String, Object> dataModel = renderer.getDataModel();
-
                 dataModel.put(Keys.MSG, langPropsService.get("insufficientBalanceLabel"));
                 filler.fillHeaderAndFooter(request, response, dataModel);
-
                 return;
             }
-
             final String memo = String.valueOf(Math.floor(point / (double) Symphonys.getInt("pointExchangeUnit")));
-
-            final String transferId = pointtransferMgmtService.transfer(userId, Pointtransfer.ID_C_SYS,
-                    Pointtransfer.TRANSFER_TYPE_C_EXCHANGE, point, memo);
-
+            final String transferId = pointtransferMgmtService.transfer(userId, Pointtransfer.ID_C_SYS, Pointtransfer.TRANSFER_TYPE_C_EXCHANGE, point, memo);
             final JSONObject notification = new JSONObject();
             notification.put(Notification.NOTIFICATION_USER_ID, userId);
             notification.put(Notification.NOTIFICATION_DATA_ID, transferId);
-
             notificationMgmtService.addPointExchangeNotification(notification);
         } catch (final Exception e) {
             final AbstractFreeMarkerRenderer renderer = new SkinRenderer();
             context.setRenderer(renderer);
             renderer.setTemplateName("admin/error.ftl");
             final Map<String, Object> dataModel = renderer.getDataModel();
-
             dataModel.put(Keys.MSG, e.getMessage());
             filler.fillHeaderAndFooter(request, response, dataModel);
-
             return;
         }
-
         response.sendRedirect(Latkes.getServePath() + "/admin/user/" + userId);
     }
 
@@ -1258,34 +1125,28 @@ public class AdminProcessor {
      * @throws Exception exception
      */
     @RequestProcessing(value = "/admin/articles", method = HTTPRequestMethod.GET)
-    @Before(adviceClass = {StopwatchStartAdvice.class, AdminCheck.class})
+    @Before(adviceClass = { StopwatchStartAdvice.class, AdminCheck.class })
     @After(adviceClass = StopwatchEndAdvice.class)
-    public void showArticles(final HTTPRequestContext context, final HttpServletRequest request, final HttpServletResponse response)
-            throws Exception {
+    public void showArticles(final HTTPRequestContext context, final HttpServletRequest request, final HttpServletResponse response) throws Exception {
         final AbstractFreeMarkerRenderer renderer = new SkinRenderer();
         context.setRenderer(renderer);
         renderer.setTemplateName("admin/articles.ftl");
         final Map<String, Object> dataModel = renderer.getDataModel();
-
         String pageNumStr = request.getParameter("p");
         if (Strings.isEmptyOrNull(pageNumStr) || !Strings.isNumeric(pageNumStr)) {
             pageNumStr = "1";
         }
-
         final int pageNum = Integer.valueOf(pageNumStr);
         final int pageSize = PAGE_SIZE;
         final int windowSize = WINDOW_SIZE;
-
         final JSONObject requestJSONObject = new JSONObject();
         requestJSONObject.put(Pagination.PAGINATION_CURRENT_PAGE_NUM, pageNum);
         requestJSONObject.put(Pagination.PAGINATION_PAGE_SIZE, pageSize);
         requestJSONObject.put(Pagination.PAGINATION_WINDOW_SIZE, windowSize);
-
         final String articleId = request.getParameter("id");
         if (!Strings.isEmptyOrNull(articleId)) {
             requestJSONObject.put(Keys.OBJECT_ID, articleId);
         }
-
         final Map<String, Class<?>> articleFields = new HashMap<String, Class<?>>();
         articleFields.put(Keys.OBJECT_ID, String.class);
         articleFields.put(Article.ARTICLE_TITLE, String.class);
@@ -1297,10 +1158,9 @@ public class AdminProcessor {
         articleFields.put(Article.ARTICLE_AUTHOR_ID, String.class);
         articleFields.put(Article.ARTICLE_TAGS, String.class);
         articleFields.put(Article.ARTICLE_STATUS, Integer.class);
-
+        articleFields.put(Article.ARTICLE_STICK, Long.class);
         final JSONObject result = articleQueryService.getArticles(requestJSONObject, articleFields);
         dataModel.put(Article.ARTICLES, CollectionUtils.jsonArrayToList(result.optJSONArray(Article.ARTICLES)));
-
         final JSONObject pagination = result.optJSONObject(Pagination.PAGINATION);
         final int pageCount = pagination.optInt(Pagination.PAGINATION_PAGE_COUNT);
         final JSONArray pageNums = pagination.optJSONArray(Pagination.PAGINATION_PAGE_NUMS);
@@ -1309,7 +1169,6 @@ public class AdminProcessor {
         dataModel.put(Pagination.PAGINATION_CURRENT_PAGE_NUM, pageNum);
         dataModel.put(Pagination.PAGINATION_PAGE_COUNT, pageCount);
         dataModel.put(Pagination.PAGINATION_PAGE_NUMS, CollectionUtils.jsonArrayToList(pageNums));
-
         filler.fillHeaderAndFooter(request, response, dataModel);
     }
 
@@ -1323,18 +1182,15 @@ public class AdminProcessor {
      * @throws Exception exception
      */
     @RequestProcessing(value = "/admin/article/{articleId}", method = HTTPRequestMethod.GET)
-    @Before(adviceClass = {StopwatchStartAdvice.class, AdminCheck.class})
+    @Before(adviceClass = { StopwatchStartAdvice.class, AdminCheck.class })
     @After(adviceClass = StopwatchEndAdvice.class)
-    public void showArticle(final HTTPRequestContext context, final HttpServletRequest request, final HttpServletResponse response,
-            final String articleId) throws Exception {
+    public void showArticle(final HTTPRequestContext context, final HttpServletRequest request, final HttpServletResponse response, final String articleId) throws Exception {
         final AbstractFreeMarkerRenderer renderer = new SkinRenderer();
         context.setRenderer(renderer);
         renderer.setTemplateName("admin/article.ftl");
         final Map<String, Object> dataModel = renderer.getDataModel();
-
         final JSONObject article = articleQueryService.getArticle(articleId);
         dataModel.put(Article.ARTICLE, article);
-
         filler.fillHeaderAndFooter(request, response, dataModel);
     }
 
@@ -1348,41 +1204,29 @@ public class AdminProcessor {
      * @throws Exception exception
      */
     @RequestProcessing(value = "/admin/article/{articleId}", method = HTTPRequestMethod.POST)
-    @Before(adviceClass = {StopwatchStartAdvice.class, AdminCheck.class})
+    @Before(adviceClass = { StopwatchStartAdvice.class, AdminCheck.class })
     @After(adviceClass = StopwatchEndAdvice.class)
-    public void updateArticle(final HTTPRequestContext context, final HttpServletRequest request, final HttpServletResponse response,
-            final String articleId) throws Exception {
+    public void updateArticle(final HTTPRequestContext context, final HttpServletRequest request, final HttpServletResponse response, final String articleId) throws Exception {
         final AbstractFreeMarkerRenderer renderer = new SkinRenderer();
         context.setRenderer(renderer);
         renderer.setTemplateName("admin/article.ftl");
         final Map<String, Object> dataModel = renderer.getDataModel();
-
         JSONObject article = articleQueryService.getArticle(articleId);
-
         final Enumeration<String> parameterNames = request.getParameterNames();
         while (parameterNames.hasMoreElements()) {
             final String name = parameterNames.nextElement();
             final String value = request.getParameter(name);
-
-            if (name.equals(Article.ARTICLE_REWARD_POINT)
-                    || name.equals(Article.ARTICLE_STATUS)
-                    || name.equals(Article.ARTICLE_TYPE)
-                    || name.equals(Article.ARTICLE_GOOD_CNT)
-                    || name.equals(Article.ARTICLE_BAD_CNT)) {
+            if (name.equals(Article.ARTICLE_REWARD_POINT) || name.equals(Article.ARTICLE_STATUS) || name.equals(Article.ARTICLE_TYPE) || name.equals(Article.ARTICLE_GOOD_CNT) || name.equals(Article.ARTICLE_BAD_CNT)) {
                 article.put(name, Integer.valueOf(value));
             } else {
                 article.put(name, value);
             }
         }
-
         final String articleTags = Tag.formatTags(article.optString(Article.ARTICLE_TAGS));
         article.put(Article.ARTICLE_TAGS, articleTags);
-
         articleMgmtService.updateArticle(articleId, article);
-
         article = articleQueryService.getArticle(articleId);
         dataModel.put(Article.ARTICLE, article);
-
         filler.fillHeaderAndFooter(request, response, dataModel);
     }
 
@@ -1395,29 +1239,24 @@ public class AdminProcessor {
      * @throws Exception exception
      */
     @RequestProcessing(value = "/admin/comments", method = HTTPRequestMethod.GET)
-    @Before(adviceClass = {StopwatchStartAdvice.class, AdminCheck.class})
+    @Before(adviceClass = { StopwatchStartAdvice.class, AdminCheck.class })
     @After(adviceClass = StopwatchEndAdvice.class)
-    public void showComments(final HTTPRequestContext context, final HttpServletRequest request, final HttpServletResponse response)
-            throws Exception {
+    public void showComments(final HTTPRequestContext context, final HttpServletRequest request, final HttpServletResponse response) throws Exception {
         final AbstractFreeMarkerRenderer renderer = new SkinRenderer();
         context.setRenderer(renderer);
         renderer.setTemplateName("admin/comments.ftl");
         final Map<String, Object> dataModel = renderer.getDataModel();
-
         String pageNumStr = request.getParameter("p");
         if (Strings.isEmptyOrNull(pageNumStr) || !Strings.isNumeric(pageNumStr)) {
             pageNumStr = "1";
         }
-
         final int pageNum = Integer.valueOf(pageNumStr);
         final int pageSize = PAGE_SIZE;
         final int windowSize = WINDOW_SIZE;
-
         final JSONObject requestJSONObject = new JSONObject();
         requestJSONObject.put(Pagination.PAGINATION_CURRENT_PAGE_NUM, pageNum);
         requestJSONObject.put(Pagination.PAGINATION_PAGE_SIZE, pageSize);
         requestJSONObject.put(Pagination.PAGINATION_WINDOW_SIZE, windowSize);
-
         final Map<String, Class<?>> commentFields = new HashMap<String, Class<?>>();
         commentFields.put(Keys.OBJECT_ID, String.class);
         commentFields.put(Comment.COMMENT_CREATE_TIME, String.class);
@@ -1426,10 +1265,8 @@ public class AdminProcessor {
         commentFields.put(Comment.COMMENT_SHARP_URL, String.class);
         commentFields.put(Comment.COMMENT_STATUS, Integer.class);
         commentFields.put(Comment.COMMENT_CONTENT, String.class);
-
         final JSONObject result = commentQueryService.getComments(requestJSONObject, commentFields);
         dataModel.put(Comment.COMMENTS, CollectionUtils.jsonArrayToList(result.optJSONArray(Comment.COMMENTS)));
-
         final JSONObject pagination = result.optJSONObject(Pagination.PAGINATION);
         final int pageCount = pagination.optInt(Pagination.PAGINATION_PAGE_COUNT);
         final JSONArray pageNums = pagination.optJSONArray(Pagination.PAGINATION_PAGE_NUMS);
@@ -1438,7 +1275,6 @@ public class AdminProcessor {
         dataModel.put(Pagination.PAGINATION_CURRENT_PAGE_NUM, pageNum);
         dataModel.put(Pagination.PAGINATION_PAGE_COUNT, pageCount);
         dataModel.put(Pagination.PAGINATION_PAGE_NUMS, CollectionUtils.jsonArrayToList(pageNums));
-
         filler.fillHeaderAndFooter(request, response, dataModel);
     }
 
@@ -1452,18 +1288,15 @@ public class AdminProcessor {
      * @throws Exception exception
      */
     @RequestProcessing(value = "/admin/comment/{commentId}", method = HTTPRequestMethod.GET)
-    @Before(adviceClass = {StopwatchStartAdvice.class, AdminCheck.class})
+    @Before(adviceClass = { StopwatchStartAdvice.class, AdminCheck.class })
     @After(adviceClass = StopwatchEndAdvice.class)
-    public void showComment(final HTTPRequestContext context, final HttpServletRequest request, final HttpServletResponse response,
-            final String commentId) throws Exception {
+    public void showComment(final HTTPRequestContext context, final HttpServletRequest request, final HttpServletResponse response, final String commentId) throws Exception {
         final AbstractFreeMarkerRenderer renderer = new SkinRenderer();
         context.setRenderer(renderer);
         renderer.setTemplateName("admin/comment.ftl");
         final Map<String, Object> dataModel = renderer.getDataModel();
-
         final JSONObject comment = commentQueryService.getComment(commentId);
         dataModel.put(Comment.COMMENT, comment);
-
         filler.fillHeaderAndFooter(request, response, dataModel);
     }
 
@@ -1477,30 +1310,23 @@ public class AdminProcessor {
      * @throws Exception exception
      */
     @RequestProcessing(value = "/admin/comment/{commentId}", method = HTTPRequestMethod.POST)
-    @Before(adviceClass = {StopwatchStartAdvice.class, AdminCheck.class})
+    @Before(adviceClass = { StopwatchStartAdvice.class, AdminCheck.class })
     @After(adviceClass = StopwatchEndAdvice.class)
-    public void updateComment(final HTTPRequestContext context, final HttpServletRequest request, final HttpServletResponse response,
-            final String commentId) throws Exception {
+    public void updateComment(final HTTPRequestContext context, final HttpServletRequest request, final HttpServletResponse response, final String commentId) throws Exception {
         final AbstractFreeMarkerRenderer renderer = new SkinRenderer();
         context.setRenderer(renderer);
         renderer.setTemplateName("admin/comment.ftl");
         final Map<String, Object> dataModel = renderer.getDataModel();
-
         JSONObject comment = commentQueryService.getComment(commentId);
-
         final Enumeration<String> parameterNames = request.getParameterNames();
         while (parameterNames.hasMoreElements()) {
             final String name = parameterNames.nextElement();
             final String value = request.getParameter(name);
-
             comment.put(name, value);
         }
-
         commentMgmtService.updateComment(commentId, comment);
-
         comment = commentQueryService.getComment(commentId);
         dataModel.put(Comment.COMMENT, comment);
-
         filler.fillHeaderAndFooter(request, response, dataModel);
     }
 
@@ -1513,18 +1339,15 @@ public class AdminProcessor {
      * @throws Exception exception
      */
     @RequestProcessing(value = "/admin/misc", method = HTTPRequestMethod.GET)
-    @Before(adviceClass = {StopwatchStartAdvice.class, AdminCheck.class})
+    @Before(adviceClass = { StopwatchStartAdvice.class, AdminCheck.class })
     @After(adviceClass = StopwatchEndAdvice.class)
-    public void showMisc(final HTTPRequestContext context, final HttpServletRequest request, final HttpServletResponse response)
-            throws Exception {
+    public void showMisc(final HTTPRequestContext context, final HttpServletRequest request, final HttpServletResponse response) throws Exception {
         final AbstractFreeMarkerRenderer renderer = new SkinRenderer();
         context.setRenderer(renderer);
         renderer.setTemplateName("admin/misc.ftl");
         final Map<String, Object> dataModel = renderer.getDataModel();
-
         final List<JSONObject> misc = optionQueryService.getMisc();
         dataModel.put(Option.OPTIONS, misc);
-
         filler.fillHeaderAndFooter(request, response, dataModel);
     }
 
@@ -1537,37 +1360,29 @@ public class AdminProcessor {
      * @throws Exception exception
      */
     @RequestProcessing(value = "/admin/misc", method = HTTPRequestMethod.POST)
-    @Before(adviceClass = {StopwatchStartAdvice.class, AdminCheck.class})
+    @Before(adviceClass = { StopwatchStartAdvice.class, AdminCheck.class })
     @After(adviceClass = StopwatchEndAdvice.class)
-    public void updateMisc(final HTTPRequestContext context, final HttpServletRequest request, final HttpServletResponse response)
-            throws Exception {
+    public void updateMisc(final HTTPRequestContext context, final HttpServletRequest request, final HttpServletResponse response) throws Exception {
         final AbstractFreeMarkerRenderer renderer = new SkinRenderer();
         context.setRenderer(renderer);
         renderer.setTemplateName("admin/misc.ftl");
         final Map<String, Object> dataModel = renderer.getDataModel();
-
         List<JSONObject> misc = new ArrayList<JSONObject>();
-
         final Enumeration<String> parameterNames = request.getParameterNames();
         while (parameterNames.hasMoreElements()) {
             final String name = parameterNames.nextElement();
             final String value = request.getParameter(name);
-
             final JSONObject option = new JSONObject();
             option.put(Keys.OBJECT_ID, name);
             option.put(Option.OPTION_VALUE, value);
             option.put(Option.OPTION_CATEGORY, Option.CATEGORY_C_MISC);
-
             misc.add(option);
         }
-
         for (final JSONObject option : misc) {
             optionMgmtService.updateOption(option.getString(Keys.OBJECT_ID), option);
         }
-
         misc = optionQueryService.getMisc();
         dataModel.put(Option.OPTIONS, misc);
-
         filler.fillHeaderAndFooter(request, response, dataModel);
     }
 
@@ -1580,34 +1395,28 @@ public class AdminProcessor {
      * @throws Exception exception
      */
     @RequestProcessing(value = "/admin/tags", method = HTTPRequestMethod.GET)
-    @Before(adviceClass = {StopwatchStartAdvice.class, AdminCheck.class})
+    @Before(adviceClass = { StopwatchStartAdvice.class, AdminCheck.class })
     @After(adviceClass = StopwatchEndAdvice.class)
-    public void showTags(final HTTPRequestContext context, final HttpServletRequest request, final HttpServletResponse response)
-            throws Exception {
+    public void showTags(final HTTPRequestContext context, final HttpServletRequest request, final HttpServletResponse response) throws Exception {
         final AbstractFreeMarkerRenderer renderer = new SkinRenderer();
         context.setRenderer(renderer);
         renderer.setTemplateName("admin/tags.ftl");
         final Map<String, Object> dataModel = renderer.getDataModel();
-
         String pageNumStr = request.getParameter("p");
         if (Strings.isEmptyOrNull(pageNumStr) || !Strings.isNumeric(pageNumStr)) {
             pageNumStr = "1";
         }
-
         final int pageNum = Integer.valueOf(pageNumStr);
         final int pageSize = PAGE_SIZE;
         final int windowSize = WINDOW_SIZE;
-
         final JSONObject requestJSONObject = new JSONObject();
         requestJSONObject.put(Pagination.PAGINATION_CURRENT_PAGE_NUM, pageNum);
         requestJSONObject.put(Pagination.PAGINATION_PAGE_SIZE, pageSize);
         requestJSONObject.put(Pagination.PAGINATION_WINDOW_SIZE, windowSize);
-
         final String tagTitle = request.getParameter(Common.TITLE);
         if (!Strings.isEmptyOrNull(tagTitle)) {
             requestJSONObject.put(Tag.TAG_TITLE, tagTitle);
         }
-
         final Map<String, Class<?>> tagFields = new HashMap<String, Class<?>>();
         tagFields.put(Keys.OBJECT_ID, String.class);
         tagFields.put(Tag.TAG_TITLE, String.class);
@@ -1619,10 +1428,8 @@ public class AdminProcessor {
         tagFields.put(Tag.TAG_STATUS, Integer.class);
         tagFields.put(Tag.TAG_GOOD_CNT, Integer.class);
         tagFields.put(Tag.TAG_BAD_CNT, Integer.class);
-
         final JSONObject result = tagQueryService.getTags(requestJSONObject, tagFields);
         dataModel.put(Tag.TAGS, CollectionUtils.jsonArrayToList(result.optJSONArray(Tag.TAGS)));
-
         final JSONObject pagination = result.optJSONObject(Pagination.PAGINATION);
         final int pageCount = pagination.optInt(Pagination.PAGINATION_PAGE_COUNT);
         final JSONArray pageNums = pagination.optJSONArray(Pagination.PAGINATION_PAGE_NUMS);
@@ -1631,7 +1438,6 @@ public class AdminProcessor {
         dataModel.put(Pagination.PAGINATION_CURRENT_PAGE_NUM, pageNum);
         dataModel.put(Pagination.PAGINATION_PAGE_COUNT, pageCount);
         dataModel.put(Pagination.PAGINATION_PAGE_NUMS, CollectionUtils.jsonArrayToList(pageNums));
-
         filler.fillHeaderAndFooter(request, response, dataModel);
     }
 
@@ -1645,18 +1451,15 @@ public class AdminProcessor {
      * @throws Exception exception
      */
     @RequestProcessing(value = "/admin/tag/{tagId}", method = HTTPRequestMethod.GET)
-    @Before(adviceClass = {StopwatchStartAdvice.class, AdminCheck.class})
+    @Before(adviceClass = { StopwatchStartAdvice.class, AdminCheck.class })
     @After(adviceClass = StopwatchEndAdvice.class)
-    public void showTag(final HTTPRequestContext context, final HttpServletRequest request, final HttpServletResponse response,
-            final String tagId) throws Exception {
+    public void showTag(final HTTPRequestContext context, final HttpServletRequest request, final HttpServletResponse response, final String tagId) throws Exception {
         final AbstractFreeMarkerRenderer renderer = new SkinRenderer();
         context.setRenderer(renderer);
         renderer.setTemplateName("admin/tag.ftl");
         final Map<String, Object> dataModel = renderer.getDataModel();
-
         final JSONObject tag = tagQueryService.getTag(tagId);
         dataModel.put(Tag.TAG, tag);
-
         filler.fillHeaderAndFooter(request, response, dataModel);
     }
 
@@ -1670,36 +1473,27 @@ public class AdminProcessor {
      * @throws Exception exception
      */
     @RequestProcessing(value = "/admin/tag/{tagId}", method = HTTPRequestMethod.POST)
-    @Before(adviceClass = {StopwatchStartAdvice.class, AdminCheck.class})
+    @Before(adviceClass = { StopwatchStartAdvice.class, AdminCheck.class })
     @After(adviceClass = StopwatchEndAdvice.class)
-    public void updateTag(final HTTPRequestContext context, final HttpServletRequest request, final HttpServletResponse response,
-            final String tagId) throws Exception {
+    public void updateTag(final HTTPRequestContext context, final HttpServletRequest request, final HttpServletResponse response, final String tagId) throws Exception {
         final AbstractFreeMarkerRenderer renderer = new SkinRenderer();
         context.setRenderer(renderer);
         renderer.setTemplateName("admin/tag.ftl");
         final Map<String, Object> dataModel = renderer.getDataModel();
-
         JSONObject tag = tagQueryService.getTag(tagId);
-
         final String oldTitle = tag.optString(Tag.TAG_TITLE);
-
         final Enumeration<String> parameterNames = request.getParameterNames();
         while (parameterNames.hasMoreElements()) {
             final String name = parameterNames.nextElement();
             final String value = request.getParameter(name);
-
             tag.put(name, value);
         }
-
         final String newTitle = tag.optString(Tag.TAG_TITLE);
-
         if (oldTitle.equalsIgnoreCase(newTitle)) {
             tagMgmtService.updateTag(tagId, tag);
         }
-
         tag = tagQueryService.getTag(tagId);
         dataModel.put(Tag.TAG, tag);
-
         filler.fillHeaderAndFooter(request, response, dataModel);
     }
 
@@ -1712,34 +1506,28 @@ public class AdminProcessor {
      * @throws Exception exception
      */
     @RequestProcessing(value = "/admin/domains", method = HTTPRequestMethod.GET)
-    @Before(adviceClass = {StopwatchStartAdvice.class, AdminCheck.class})
+    @Before(adviceClass = { StopwatchStartAdvice.class, AdminCheck.class })
     @After(adviceClass = StopwatchEndAdvice.class)
-    public void showDomains(final HTTPRequestContext context, final HttpServletRequest request, final HttpServletResponse response)
-            throws Exception {
+    public void showDomains(final HTTPRequestContext context, final HttpServletRequest request, final HttpServletResponse response) throws Exception {
         final AbstractFreeMarkerRenderer renderer = new SkinRenderer();
         context.setRenderer(renderer);
         renderer.setTemplateName("admin/domains.ftl");
         final Map<String, Object> dataModel = renderer.getDataModel();
-
         String pageNumStr = request.getParameter("p");
         if (Strings.isEmptyOrNull(pageNumStr) || !Strings.isNumeric(pageNumStr)) {
             pageNumStr = "1";
         }
-
         final int pageNum = Integer.valueOf(pageNumStr);
         final int pageSize = PAGE_SIZE;
         final int windowSize = WINDOW_SIZE;
-
         final JSONObject requestJSONObject = new JSONObject();
         requestJSONObject.put(Pagination.PAGINATION_CURRENT_PAGE_NUM, pageNum);
         requestJSONObject.put(Pagination.PAGINATION_PAGE_SIZE, pageSize);
         requestJSONObject.put(Pagination.PAGINATION_WINDOW_SIZE, windowSize);
-
         final String domainTitle = request.getParameter(Common.TITLE);
         if (!Strings.isEmptyOrNull(domainTitle)) {
             requestJSONObject.put(Domain.DOMAIN_TITLE, domainTitle);
         }
-
         final Map<String, Class<?>> domainFields = new HashMap<String, Class<?>>();
         domainFields.put(Keys.OBJECT_ID, String.class);
         domainFields.put(Domain.DOMAIN_TITLE, String.class);
@@ -1747,10 +1535,8 @@ public class AdminProcessor {
         domainFields.put(Domain.DOMAIN_ICON_PATH, String.class);
         domainFields.put(Domain.DOMAIN_STATUS, String.class);
         domainFields.put(Domain.DOMAIN_URI, String.class);
-
         final JSONObject result = domainQueryService.getDomains(requestJSONObject, domainFields);
         dataModel.put(Domain.DOMAINS, CollectionUtils.jsonArrayToList(result.optJSONArray(Domain.DOMAINS)));
-
         final JSONObject pagination = result.optJSONObject(Pagination.PAGINATION);
         final int pageCount = pagination.optInt(Pagination.PAGINATION_PAGE_COUNT);
         final JSONArray pageNums = pagination.optJSONArray(Pagination.PAGINATION_PAGE_NUMS);
@@ -1759,7 +1545,6 @@ public class AdminProcessor {
         dataModel.put(Pagination.PAGINATION_CURRENT_PAGE_NUM, pageNum);
         dataModel.put(Pagination.PAGINATION_PAGE_COUNT, pageCount);
         dataModel.put(Pagination.PAGINATION_PAGE_NUMS, CollectionUtils.jsonArrayToList(pageNums));
-
         filler.fillHeaderAndFooter(request, response, dataModel);
     }
 
@@ -1773,18 +1558,15 @@ public class AdminProcessor {
      * @throws Exception exception
      */
     @RequestProcessing(value = "/admin/domain/{domainId}", method = HTTPRequestMethod.GET)
-    @Before(adviceClass = {StopwatchStartAdvice.class, AdminCheck.class})
+    @Before(adviceClass = { StopwatchStartAdvice.class, AdminCheck.class })
     @After(adviceClass = StopwatchEndAdvice.class)
-    public void showDomain(final HTTPRequestContext context, final HttpServletRequest request, final HttpServletResponse response,
-            final String domainId) throws Exception {
+    public void showDomain(final HTTPRequestContext context, final HttpServletRequest request, final HttpServletResponse response, final String domainId) throws Exception {
         final AbstractFreeMarkerRenderer renderer = new SkinRenderer();
         context.setRenderer(renderer);
         renderer.setTemplateName("admin/domain.ftl");
         final Map<String, Object> dataModel = renderer.getDataModel();
-
         final JSONObject domain = domainQueryService.getDomain(domainId);
         dataModel.put(Domain.DOMAIN, domain);
-
         filler.fillHeaderAndFooter(request, response, dataModel);
     }
 
@@ -1798,41 +1580,31 @@ public class AdminProcessor {
      * @throws Exception exception
      */
     @RequestProcessing(value = "/admin/domain/{domainId}", method = HTTPRequestMethod.POST)
-    @Before(adviceClass = {StopwatchStartAdvice.class, AdminCheck.class})
+    @Before(adviceClass = { StopwatchStartAdvice.class, AdminCheck.class })
     @After(adviceClass = StopwatchEndAdvice.class)
-    public void updateDomain(final HTTPRequestContext context, final HttpServletRequest request, final HttpServletResponse response,
-            final String domainId) throws Exception {
+    public void updateDomain(final HTTPRequestContext context, final HttpServletRequest request, final HttpServletResponse response, final String domainId) throws Exception {
         final AbstractFreeMarkerRenderer renderer = new SkinRenderer();
         context.setRenderer(renderer);
         renderer.setTemplateName("admin/domain.ftl");
         final Map<String, Object> dataModel = renderer.getDataModel();
-
         JSONObject domain = domainQueryService.getDomain(domainId);
         final String oldTitle = domain.optString(Domain.DOMAIN_TITLE);
-
         final Enumeration<String> parameterNames = request.getParameterNames();
         while (parameterNames.hasMoreElements()) {
             final String name = parameterNames.nextElement();
             String value = request.getParameter(name);
-
             if (Domain.DOMAIN_ICON_PATH.equals(name)) {
                 value = StringUtils.replace(value, "\"", "'");
             }
-
             domain.put(name, value);
         }
-
         domain.remove(Domain.DOMAIN_T_TAGS);
-
         final String newTitle = domain.optString(Domain.DOMAIN_TITLE);
-
         if (oldTitle.equalsIgnoreCase(newTitle)) {
             domainMgmtService.updateDomain(domainId, domain);
         }
-
         domain = domainQueryService.getDomain(domainId);
         dataModel.put(Domain.DOMAIN, domain);
-
         filler.fillHeaderAndFooter(request, response, dataModel);
     }
 
@@ -1845,15 +1617,13 @@ public class AdminProcessor {
      * @throws Exception exception
      */
     @RequestProcessing(value = "/admin/add-domain", method = HTTPRequestMethod.GET)
-    @Before(adviceClass = {StopwatchStartAdvice.class, AdminCheck.class})
+    @Before(adviceClass = { StopwatchStartAdvice.class, AdminCheck.class })
     @After(adviceClass = StopwatchEndAdvice.class)
-    public void showAddDomain(final HTTPRequestContext context, final HttpServletRequest request, final HttpServletResponse response)
-            throws Exception {
+    public void showAddDomain(final HTTPRequestContext context, final HttpServletRequest request, final HttpServletResponse response) throws Exception {
         final AbstractFreeMarkerRenderer renderer = new SkinRenderer();
         context.setRenderer(renderer);
         renderer.setTemplateName("admin/add-domain.ftl");
         final Map<String, Object> dataModel = renderer.getDataModel();
-
         filler.fillHeaderAndFooter(request, response, dataModel);
     }
 
@@ -1866,38 +1636,28 @@ public class AdminProcessor {
      * @throws Exception exception
      */
     @RequestProcessing(value = "/admin/add-domain", method = HTTPRequestMethod.POST)
-    @Before(adviceClass = {StopwatchStartAdvice.class, AdminCheck.class})
+    @Before(adviceClass = { StopwatchStartAdvice.class, AdminCheck.class })
     @After(adviceClass = StopwatchEndAdvice.class)
-    public void addDomain(final HTTPRequestContext context, final HttpServletRequest request, final HttpServletResponse response)
-            throws Exception {
+    public void addDomain(final HTTPRequestContext context, final HttpServletRequest request, final HttpServletResponse response) throws Exception {
         final String domainTitle = request.getParameter(Domain.DOMAIN_TITLE);
-
         if (StringUtils.isBlank(domainTitle)) {
             final AbstractFreeMarkerRenderer renderer = new SkinRenderer();
             context.setRenderer(renderer);
             renderer.setTemplateName("admin/error.ftl");
             final Map<String, Object> dataModel = renderer.getDataModel();
-
             dataModel.put(Keys.MSG, langPropsService.get("invalidDomainTitleLabel"));
-
             filler.fillHeaderAndFooter(request, response, dataModel);
-
             return;
         }
-
         if (null != domainQueryService.getByTitle(domainTitle)) {
             final AbstractFreeMarkerRenderer renderer = new SkinRenderer();
             context.setRenderer(renderer);
             renderer.setTemplateName("admin/error.ftl");
             final Map<String, Object> dataModel = renderer.getDataModel();
-
             dataModel.put(Keys.MSG, langPropsService.get("duplicatedDomainLabel"));
-
             filler.fillHeaderAndFooter(request, response, dataModel);
-
             return;
         }
-
         String domainId;
         try {
             final JSONObject domain = new JSONObject();
@@ -1905,20 +1665,16 @@ public class AdminProcessor {
             domain.put(Domain.DOMAIN_URI, domainTitle);
             domain.put(Domain.DOMAIN_DESCRIPTION, domainTitle);
             domain.put(Domain.DOMAIN_STATUS, Domain.DOMAIN_STATUS_C_VALID);
-
             domainId = domainMgmtService.addDomain(domain);
         } catch (final Exception e) {
             final AbstractFreeMarkerRenderer renderer = new SkinRenderer();
             context.setRenderer(renderer);
             renderer.setTemplateName("admin/error.ftl");
             final Map<String, Object> dataModel = renderer.getDataModel();
-
             dataModel.put(Keys.MSG, e.getMessage());
             filler.fillHeaderAndFooter(request, response, dataModel);
-
             return;
         }
-
         response.sendRedirect(Latkes.getServePath() + "/admin/domain/" + domainId);
     }
 
@@ -1931,13 +1687,11 @@ public class AdminProcessor {
      * @throws Exception exception
      */
     @RequestProcessing(value = "/admin/remove-domain", method = HTTPRequestMethod.POST)
-    @Before(adviceClass = {StopwatchStartAdvice.class, AdminCheck.class})
+    @Before(adviceClass = { StopwatchStartAdvice.class, AdminCheck.class })
     @After(adviceClass = StopwatchEndAdvice.class)
-    public void removeDomain(final HTTPRequestContext context, final HttpServletRequest request, final HttpServletResponse response)
-            throws Exception {
+    public void removeDomain(final HTTPRequestContext context, final HttpServletRequest request, final HttpServletResponse response) throws Exception {
         final String domainId = request.getParameter(Domain.DOMAIN_T_ID);
         domainMgmtService.removeDomain(domainId);
-
         response.sendRedirect(Latkes.getServePath() + "/admin/domains");
     }
 
@@ -1951,49 +1705,35 @@ public class AdminProcessor {
      * @throws Exception exception
      */
     @RequestProcessing(value = "/admin/domain/{domainId}/add-tag", method = HTTPRequestMethod.POST)
-    @Before(adviceClass = {StopwatchStartAdvice.class, AdminCheck.class})
+    @Before(adviceClass = { StopwatchStartAdvice.class, AdminCheck.class })
     @After(adviceClass = StopwatchEndAdvice.class)
-    public void addDomain(final HTTPRequestContext context, final HttpServletRequest request, final HttpServletResponse response,
-            final String domainId)
-            throws Exception {
+    public void addDomain(final HTTPRequestContext context, final HttpServletRequest request, final HttpServletResponse response, final String domainId) throws Exception {
         final String tagTitle = request.getParameter(Tag.TAG_TITLE);
         final JSONObject tag = tagQueryService.getTagByTitle(tagTitle);
-
         if (null == tag) {
             final AbstractFreeMarkerRenderer renderer = new SkinRenderer();
             context.setRenderer(renderer);
             renderer.setTemplateName("admin/error.ftl");
             final Map<String, Object> dataModel = renderer.getDataModel();
-
             dataModel.put(Keys.MSG, langPropsService.get("invalidTagLabel"));
-
             filler.fillHeaderAndFooter(request, response, dataModel);
-
             return;
         }
-
         if (domainQueryService.containTag(tagTitle, domainId)) {
             final AbstractFreeMarkerRenderer renderer = new SkinRenderer();
             context.setRenderer(renderer);
             renderer.setTemplateName("admin/error.ftl");
             final Map<String, Object> dataModel = renderer.getDataModel();
-
             String msg = langPropsService.get("domainContainTagLabel");
             msg = msg.replace("{tag}", tagTitle);
-
             dataModel.put(Keys.MSG, msg);
-
             filler.fillHeaderAndFooter(request, response, dataModel);
-
             return;
         }
-
         final JSONObject domainTag = new JSONObject();
         domainTag.put(Domain.DOMAIN + "_" + Keys.OBJECT_ID, domainId);
         domainTag.put(Tag.TAG + "_" + Keys.OBJECT_ID, tag.optString(Keys.OBJECT_ID));
-
         domainMgmtService.addDomainTag(domainTag);
-
         response.sendRedirect(Latkes.getServePath() + "/admin/domain/" + domainId);
     }
 
@@ -2007,33 +1747,24 @@ public class AdminProcessor {
      * @throws Exception exception
      */
     @RequestProcessing(value = "/admin/domain/{domainId}/remove-tag", method = HTTPRequestMethod.POST)
-    @Before(adviceClass = {StopwatchStartAdvice.class, AdminCheck.class})
+    @Before(adviceClass = { StopwatchStartAdvice.class, AdminCheck.class })
     @After(adviceClass = StopwatchEndAdvice.class)
-    public void removeDomain(final HTTPRequestContext context, final HttpServletRequest request, final HttpServletResponse response,
-            final String domainId)
-            throws Exception {
+    public void removeDomain(final HTTPRequestContext context, final HttpServletRequest request, final HttpServletResponse response, final String domainId) throws Exception {
         final String tagTitle = request.getParameter(Tag.TAG_TITLE);
         final JSONObject tag = tagQueryService.getTagByTitle(tagTitle);
-
         if (null == tag) {
             final AbstractFreeMarkerRenderer renderer = new SkinRenderer();
             context.setRenderer(renderer);
             renderer.setTemplateName("admin/error.ftl");
             final Map<String, Object> dataModel = renderer.getDataModel();
-
             dataModel.put(Keys.MSG, langPropsService.get("invalidTagLabel"));
-
             filler.fillHeaderAndFooter(request, response, dataModel);
-
             return;
         }
-
         final JSONObject domainTag = new JSONObject();
         domainTag.put(Domain.DOMAIN + "_" + Keys.OBJECT_ID, domainId);
         domainTag.put(Tag.TAG + "_" + Keys.OBJECT_ID, tag.optString(Keys.OBJECT_ID));
-
         domainMgmtService.removeDomainTag(domainId, tag.optString(Keys.OBJECT_ID));
-
         response.sendRedirect(Latkes.getServePath() + "/admin/domain/" + domainId);
     }
 
@@ -2044,39 +1775,31 @@ public class AdminProcessor {
      * @throws Exception exception
      */
     @RequestProcessing(value = "/admin/search/index", method = HTTPRequestMethod.POST)
-    @Before(adviceClass = {StopwatchStartAdvice.class, AdminCheck.class})
+    @Before(adviceClass = { StopwatchStartAdvice.class, AdminCheck.class })
     @After(adviceClass = StopwatchEndAdvice.class)
     public void searchIndex(final HTTPRequestContext context) throws Exception {
         context.renderJSON(true);
-
         if (Symphonys.getBoolean("es.enabled")) {
             searchMgmtService.rebuildESIndex();
         }
-
         if (Symphonys.getBoolean("algolia.enabled")) {
             searchMgmtService.rebuildAlgoliaIndex();
         }
-
         final JSONObject stat = optionQueryService.getStatistic();
         final int articleCount = stat.optInt(Option.ID_C_STATISTIC_ARTICLE_COUNT);
         final int pages = (int) Math.ceil((double) articleCount / 50.0);
-
         for (int pageNum = 1; pageNum <= pages; pageNum++) {
             final List<JSONObject> articles = articleQueryService.getValidArticles(pageNum, 50, Article.ARTICLE_TYPE_C_NORMAL, Article.ARTICLE_TYPE_C_CITY_BROADCAST);
-
             for (final JSONObject article : articles) {
                 if (Symphonys.getBoolean("algolia.enabled")) {
                     searchMgmtService.updateAlgoliaDocument(article);
                 }
-
                 if (Symphonys.getBoolean("es.enabled")) {
                     searchMgmtService.updateESDocument(article, Article.ARTICLE);
                 }
             }
-
             LOGGER.info("Indexed page [" + pageNum + "]");
         }
-
         LOGGER.info("Index finished");
     }
 
@@ -2087,25 +1810,20 @@ public class AdminProcessor {
      * @throws Exception exception
      */
     @RequestProcessing(value = "/admin/search-index-article", method = HTTPRequestMethod.POST)
-    @Before(adviceClass = {StopwatchStartAdvice.class, AdminCheck.class})
+    @Before(adviceClass = { StopwatchStartAdvice.class, AdminCheck.class })
     @After(adviceClass = StopwatchEndAdvice.class)
     public void searchIndexArticle(final HTTPRequestContext context) throws Exception {
         final String articleId = context.getRequest().getParameter(Article.ARTICLE_T_ID);
         final JSONObject article = articleQueryService.getArticle(articleId);
-
-        if (null == article || Article.ARTICLE_TYPE_C_DISCUSSION == article.optInt(Article.ARTICLE_TYPE)
-                || Article.ARTICLE_TYPE_C_THOUGHT == article.optInt(Article.ARTICLE_TYPE)) {
+        if (null == article || Article.ARTICLE_TYPE_C_DISCUSSION == article.optInt(Article.ARTICLE_TYPE) || Article.ARTICLE_TYPE_C_THOUGHT == article.optInt(Article.ARTICLE_TYPE)) {
             return;
         }
-
         if (Symphonys.getBoolean("algolia.enabled")) {
             searchMgmtService.updateAlgoliaDocument(article);
         }
-
         if (Symphonys.getBoolean("es.enabled")) {
             searchMgmtService.updateESDocument(article, Article.ARTICLE);
         }
-
         context.getResponse().sendRedirect(Latkes.getServePath() + "/admin/articles");
     }
 }
